@@ -28,7 +28,8 @@ model License {
     createdAt  DateTime @default(now())
     updatedAt  DateTime @default(now())
     validUntil DateTime
-    seats      Int      @default(0)
+    productId  String
+    seats      Int      @default(1)
     User       User[]
 }
 
@@ -37,6 +38,7 @@ model Session {
     createdAt DateTime @default(now())
     updatedAt DateTime @default(now())
     token     String   @unique
+    name      String
     user      User     @relation(fields: [userId], references: [id])
     userId    Int
 }
