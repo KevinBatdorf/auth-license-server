@@ -7,7 +7,7 @@ import { makeSessionName } from '../../lib/util'
 import Cors from 'cors'
 import initMiddleware from '../../lib/init-middleware'
 
-const cors = initMiddleware(Cors({ methods: ['GET', 'OPTIONS'] }))
+const cors = initMiddleware(Cors({ methods: ['POST', 'OPTIONS'] }))
 
 export default async function handler(
     req: NextApiRequest,
@@ -16,8 +16,11 @@ export default async function handler(
     await cors(req, res)
 
     if (!process.env.JWT_REFRESH || !process.env.JWT_TOKEN) {
-        res.status(500).send('JWT_REFRESH or JWT_TOKEN not set')
+        res.status(500).send({ error: 'JWT_REFRESH or JWT_TOKEN not set' })
         return
+    }
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' })
     }
 
     const { email, password } = req.body
