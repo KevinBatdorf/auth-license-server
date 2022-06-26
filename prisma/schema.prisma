@@ -17,6 +17,9 @@ model User {
     email     String    @unique
     name      String
     password  String
+    // ADMIN, OWNER, MANAGER (think client managing the resource)
+    role      String    @default("OWNER")
+    // ACTIVE, INACTIVE, DELETED?
     status    String    @default("ACTIVE")
     sessions  Session[]
     licenses  License[]

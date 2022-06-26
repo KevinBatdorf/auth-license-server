@@ -1,11 +1,11 @@
-import { prisma } from '../../lib/prisma'
+import { prisma } from '../../../lib/prisma'
 import { NextApiRequest, NextApiResponse } from 'next'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import cookie from 'cookie'
-import { makeSessionName } from '../../lib/util'
+import { makeSessionName } from '../../../lib/util'
 import Cors from 'cors'
-import initMiddleware from '../../lib/init-middleware'
+import initMiddleware from '../../../lib/init-middleware'
 
 const cors = initMiddleware(Cors({ methods: ['POST', 'OPTIONS'] }))
 
