@@ -8,6 +8,7 @@ export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse,
 ) {
+    // cors
     // Grab refresh token from cookie
     // If not found, return error
     //

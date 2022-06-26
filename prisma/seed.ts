@@ -12,11 +12,18 @@ const run = async () => {
             email: 'user@example.com',
             password: bcrypt.hashSync('password', salt),
             name: 'Kevin B',
-            License: {
-                create: {
-                    validUntil: new Date(Date.now() + 31_536_000_00), // 1 year
-                    productId: '123456789',
-                },
+            licenses: {
+                create: [
+                    {
+                        validUntil: new Date(Date.now() + 31_536_000_000), // 1 year
+                        productId: '123456789',
+                    },
+                    {
+                        validUntil: new Date(Date.now() + 31_536_000_000), // 1 year
+                        productId: '123456789',
+                        seats: 5,
+                    },
+                ],
             },
         },
     })
