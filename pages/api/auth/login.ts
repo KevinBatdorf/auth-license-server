@@ -68,11 +68,7 @@ export default async function handler(
     const session = await prisma.session.create({
         data: {
             name: makeSessionName(req.headers),
-            user: {
-                connect: {
-                    id: user.id,
-                },
-            },
+            user: { connect: { id: user.id } },
         },
     })
 
@@ -83,6 +79,7 @@ export default async function handler(
             sessionId: session.id,
         },
         process.env.JWT_REFRESH?.toString(),
+        // Never expires... but it's revokable
         { expiresIn: '9999y' },
     )
 
