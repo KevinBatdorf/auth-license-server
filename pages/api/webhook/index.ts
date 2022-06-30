@@ -22,7 +22,8 @@ export default async function handler(
     // try/catch over the incoming action function in a way where if
     // it doesn't exist it will return a 404
     // create-user
-    // if no password is provided, send the user an email with a 30m token
+    // Send the user an email with a 30m token
+    //
     // update-user
     // allow a password to be updated and status to be updated
     // delete-user

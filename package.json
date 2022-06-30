@@ -12,13 +12,13 @@
         "seed": "ts-node ./prisma/seed.ts"
     },
     "dependencies": {
-        "@prisma/client": "^3.15.2",
+        "@prisma/client": "^4.0.0",
         "bcrypt": "^5.0.1",
         "cookie": "^0.5.0",
         "cors": "^2.8.5",
         "jsonwebtoken": "^8.5.1",
-        "next": "12.1.6",
-        "prisma": "^3.15.2",
+        "next": "12.2.0",
+        "prisma": "^4.0.0",
         "react": "18.2.0",
         "react-dom": "18.2.0"
     },
@@ -31,7 +31,7 @@
         "@types/react": "18.0.14",
         "@types/react-dom": "18.0.5",
         "eslint": "8.18.0",
-        "eslint-config-next": "12.1.6",
+        "eslint-config-next": "12.2.0",
         "ts-node": "^10.8.1",
         "typescript": "4.7.4"
     }

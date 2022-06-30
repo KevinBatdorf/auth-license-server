@@ -3,7 +3,6 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import cookie from 'cookie'
-import { makeSessionName } from '../../../lib/util'
 import Cors from 'cors'
 import initMiddleware from '../../../lib/init-middleware'
 
@@ -24,10 +23,11 @@ export default async function handler(
     }
 
     const { email, password } = req.body
+    const { country, city, region } = req.query
+
     let user
     try {
-        user = await prisma.user.findUnique({
-            rejectOnNotFound: true,
+        user = await prisma.user.findUniqueOrThrow({
             where: { email },
             include: {
                 sessions: true,
@@ -52,6 +52,7 @@ export default async function handler(
     }
 
     // Check how many unused licenses are available
+    // TODO: Bypass this for host/admin server??
     const totalLicenses = user.licenses
         .filter((l) => {
             return new Date(l.validUntil) > new Date()
@@ -67,7 +68,11 @@ export default async function handler(
     // Create session db item and add to user
     const session = await prisma.session.create({
         data: {
-            name: makeSessionName(req.headers),
+            userAgent: req.headers['user-agent'],
+            host: req.headers['host'],
+            country: country ? country.toString() : undefined,
+            city: city ? country.toString() : undefined,
+            region: region ? country.toString() : undefined,
             user: { connect: { id: user.id } },
         },
     })
@@ -87,12 +92,6 @@ export default async function handler(
     await prisma.session.update({
         where: { id: session.id },
         data: { token: refreshToken },
-    })
-
-    // Add the session to the user
-    await prisma.user.update({
-        where: { id: user.id },
-        data: { sessions: { connect: { id: session.id } } },
     })
 
     // Set the cookie
