@@ -84,8 +84,7 @@ export default async function handler(
             sessionId: session.id,
         },
         process.env.JWT_REFRESH?.toString(),
-        // Never expires... but it's revokable
-        { expiresIn: '9999y' },
+        { expiresIn: '180d' },
     )
 
     // Add the token back into the session item

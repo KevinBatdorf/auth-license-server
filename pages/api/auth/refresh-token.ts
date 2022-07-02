@@ -54,7 +54,7 @@ export default async function handler(
         return
     }
 
-    // Check that the refresh token wasn't revoked or tampered wit
+    // Check that the refresh token wasn't revoked or tampered with
     if (session.token !== refreshToken) {
         // Remove the session - requiring them to login again
         await prisma.session.delete({
@@ -68,8 +68,7 @@ export default async function handler(
     const refreshTokenNew = jwt.sign(
         { userId, sessionId },
         process.env.JWT_REFRESH?.toString(),
-        // Never expires... but it's revokable
-        { expiresIn: '9999y' },
+        { expiresIn: '180d' },
     )
 
     // Update token and last activity timestamp
