@@ -1,4 +1,5 @@
 import { prisma } from '../../../lib/prisma'
+import cookie from 'cookie'
 import { NextApiRequest, NextApiResponse } from 'next'
 import jwt from 'jsonwebtoken'
 import Cors from 'cors'
@@ -15,6 +16,11 @@ export default async function handler(
     if (!process.env.JWT_REFRESH || !process.env.JWT_TOKEN) {
         res.status(500).send({ error: 'JWT_REFRESH or JWT_TOKEN not set' })
         return
+    }
+    // Often you will see a GET request on refresh tokens, but this
+    // is not an idempotent function so we are using POST.
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' })
     }
 
     // Grab refresh token from cookie
@@ -48,17 +54,44 @@ export default async function handler(
         return
     }
 
-    // Update last login by updating the updatedAt timestamp
-    await prisma.session.update({
-        where: { id: sessionId },
-        data: { updatedAt: new Date() },
-    })
-
-    // Check that the refresh token wasn't revoked
+    // Check that the refresh token wasn't revoked or tampered wit
     if (session.token !== refreshToken) {
+        // Remove the session - requiring them to login again
+        await prisma.session.delete({
+            where: { id: sessionId },
+        })
         res.status(401).send({ error: 'Session was revoked' })
         return
     }
+
+    // Create a new refresh token
+    const refreshTokenNew = jwt.sign(
+        { userId, sessionId },
+        process.env.JWT_REFRESH?.toString(),
+        // Never expires... but it's revokable
+        { expiresIn: '9999y' },
+    )
+
+    // Update token and last activity timestamp
+    await prisma.session.update({
+        where: { id: sessionId },
+        data: {
+            updatedAt: new Date(),
+            token: refreshTokenNew,
+        },
+    })
+
+    // Set the cookie
+    res.setHeader(
+        'Set-Cookie',
+        cookie.serialize('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 3_155_760_000, // 100 years
+            path: '/',
+        }),
+    )
 
     // create a new access token and send it back
     const accessToken = jwt.sign(
@@ -68,5 +101,8 @@ export default async function handler(
     )
 
     // Send the access token and refresh token back
-    res.status(200).send({ accessToken })
+    res.status(200).send({
+        refreshToken: refreshTokenNew,
+        accessToken,
+    })
 }

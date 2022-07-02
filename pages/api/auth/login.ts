@@ -77,7 +77,7 @@ export default async function handler(
         },
     })
 
-    // Create refresh token and place in cookie
+    // Create refresh token to place in cookie
     const refreshToken = jwt.sign(
         {
             userId: user.id,
