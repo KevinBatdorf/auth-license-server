@@ -1,6 +1,7 @@
 import { prisma } from '../../../lib/prisma'
 import { NextApiRequest, NextApiResponse } from 'next'
 import jwt from 'jsonwebtoken'
+import { sendPasswordResetEmail } from '../../../lib/email'
 
 export default async function handler(
     req: NextApiRequest,
@@ -26,6 +27,7 @@ export default async function handler(
             expiresIn: '30m',
         })
         // TODO: send email with token
+        console.log(await sendPasswordResetEmail(email, token))
     }
 
     // Make sure 3 seconds have passed
