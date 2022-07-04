@@ -6,7 +6,7 @@ import cookie from 'cookie'
 import Cors from 'cors'
 import initMiddleware from '../../../lib/init-middleware'
 
-const cors = initMiddleware(Cors({ methods: ['POST', 'OPTIONS'] }))
+const cors = initMiddleware(Cors({ methods: ['POST'] }))
 
 export default async function handler(
     req: NextApiRequest,
@@ -19,7 +19,8 @@ export default async function handler(
         return
     }
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' })
+        res.status(405).json({ error: 'Method not allowed' })
+        return
     }
 
     const { email, password } = req.body
@@ -52,13 +53,16 @@ export default async function handler(
     }
 
     // Check how many unused licenses are available
-    // TODO: Bypass this for host/admin server??
     const totalLicenses = user.licenses
         .filter((l) => {
             return new Date(l.validUntil) > new Date()
         })
         .reduce((total, next) => total + next.seats, 0)
-    const unusedLicenses = totalLicenses - user.sessions.length
+
+    // Get active sessions
+    const activeSessions = user.sessions.filter((s) => s.token?.length)
+    // Check remaining licenses
+    const unusedLicenses = totalLicenses - activeSessions?.length
     // if none, return error
     if (unusedLicenses === 0) {
         res.status(401).send({ error: 'No licenses available' })
@@ -100,7 +104,7 @@ export default async function handler(
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: 3_155_760_000, // 100 years
+            maxAge: 15_552_000, // 180 days
             path: '/',
         }),
     )
@@ -110,6 +114,7 @@ export default async function handler(
         {
             userId: user.id,
             status: user.status,
+            role: user.role,
         },
         process.env.JWT_TOKEN?.toString(),
         { expiresIn: '10m' },

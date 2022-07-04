@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken'
 import Cors from 'cors'
 import initMiddleware from '../../../lib/init-middleware'
 
-const cors = initMiddleware(Cors({ methods: ['POST', 'OPTIONS'] }))
+const cors = initMiddleware(Cors({ methods: ['POST'] }))
 
 export default async function handler(
     req: NextApiRequest,
@@ -20,7 +20,8 @@ export default async function handler(
     // Often you will see a GET request on refresh tokens, but this
     // is not an idempotent function so we are using POST.
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' })
+        res.status(405).json({ error: 'Method not allowed' })
+        return
     }
 
     // Grab refresh token from cookie
@@ -48,6 +49,9 @@ export default async function handler(
         session = await prisma.session.findUniqueOrThrow({
             where: { id: sessionId },
         })
+        if (!session.token) {
+            throw new Error('Session inactive')
+        }
     } catch (e) {
         // If not, it means it was revoked and we should deny access
         res.status(401).send({ error: 'Session not found' })
@@ -57,8 +61,9 @@ export default async function handler(
     // Check that the refresh token wasn't revoked or tampered with
     if (session.token !== refreshToken) {
         // Remove the session - requiring them to login again
-        await prisma.session.delete({
+        await prisma.session.update({
             where: { id: sessionId },
+            data: { updatedAt: new Date(), token: null },
         })
         res.status(401).send({ error: 'Session was revoked' })
         return
@@ -74,10 +79,7 @@ export default async function handler(
     // Update token and last activity timestamp
     await prisma.session.update({
         where: { id: sessionId },
-        data: {
-            updatedAt: new Date(),
-            token: refreshTokenNew,
-        },
+        data: { updatedAt: new Date(), token: refreshTokenNew },
     })
 
     // Set the cookie
@@ -87,12 +89,12 @@ export default async function handler(
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            maxAge: 3_155_760_000, // 100 years
+            maxAge: 15_552_000, // 180 days
             path: '/',
         }),
     )
 
-    // create a new access token and send it back
+    // Create a new access token and send it back
     const accessToken = jwt.sign(
         { userId, sessionId },
         process.env.JWT_TOKEN.toString(),
