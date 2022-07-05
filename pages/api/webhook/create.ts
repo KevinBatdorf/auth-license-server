@@ -1,21 +1,20 @@
-import { prisma } from '../../../lib/prisma'
 import { NextApiRequest, NextApiResponse } from 'next'
-import jwt from 'jsonwebtoken'
-import Cors from 'cors'
-import initMiddleware from '../../../lib/init-middleware'
+import { homeUrl } from '@/lib/constants'
+import { cors, method } from '@/lib/access'
+import { signWebhookToken, verifyAccessToken } from '@/lib/auth'
+import { AccessTokenData } from '@/lib/types'
+import { createWebhookForUser } from '@/lib/models/webhook'
 
-const cors = initMiddleware(Cors({ methods: ['POST'] }))
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse,
 ) {
-    await cors(req, res)
+    await cors(req, res, { methods: ['POST'] })
+    await method(req, res, { methods: ['POST'] })
 
-    if (!process.env.JWT_TOKEN || !process.env.JWT_WEBHOOK) {
-        res.status(500).send({ error: 'JWT_WEBHOOK or JWT_TOKEN not set' })
-        return
-    }
-    if (!req.headers?.['x-access-token']) {
+    const accesstoken = req.headers?.['x-access-token']
+
+    if (!accesstoken) {
         res.status(401).json({ error: 'Unauthorized' })
         return
     }
@@ -31,10 +30,11 @@ export default async function handler(
     }
 
     // Check access token from header
-    const { role, status, userId } = jwt.verify(
-        req.headers?.['x-access-token']?.toString(),
-        process.env.JWT_TOKEN.toString(),
-    ) as { role: string; status: string; userId: number }
+    const data = await verifyAccessToken(String(accesstoken)).catch(() => {
+        res.status(401).send({ error: 'Invalid token token' })
+    })
+    if (!data) return
+    const { userId, role, status } = data as AccessTokenData
 
     if (role !== 'ADMIN' || status !== 'ACTIVE') {
         res.status(401).json({ error: 'Unauthorized' })
@@ -42,17 +42,12 @@ export default async function handler(
     }
 
     // Create Webhook item and assign to the user
-    const webhook = await prisma.webhook.create({
-        data: {
-            name: name,
-            token: jwt.sign({ userId }, process.env.JWT_WEBHOOK.toString(), {
-                expiresIn: '9999y',
-            }),
-            user: { connect: { id: userId } },
-        },
+    const webhook = await createWebhookForUser(userId, {
+        name,
+        token: await signWebhookToken('9999y', { userId }),
     })
 
     res.status(200).send({
-        webhook: `${process.env.APP_URL}/api/webhook?token=${webhook.token}`,
+        webhook: `${homeUrl}/api/webhook?token=${webhook.token}`,
     })
 }

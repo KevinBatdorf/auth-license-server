@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import { production } from './constants'
 
 declare global {
     // allow global `var` declarations
@@ -12,4 +13,4 @@ export const prisma =
         log: ['query'],
     })
 
-if (process.env.NODE_ENV !== 'production') global.prisma = prisma
+if (!production) global.prisma = prisma

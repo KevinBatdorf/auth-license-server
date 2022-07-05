@@ -1,28 +1,24 @@
-import { prisma } from '../../../lib/prisma'
-import cookie from 'cookie'
 import { NextApiRequest, NextApiResponse } from 'next'
-import jwt from 'jsonwebtoken'
-import Cors from 'cors'
-import initMiddleware from '../../../lib/init-middleware'
-
-const cors = initMiddleware(Cors({ methods: ['POST'] }))
+import { method, cors } from '@/lib/access'
+import {
+    createTokenCookie,
+    signAccessToken,
+    signRefreshToken,
+    verifyRefreshToken,
+} from '@/lib/auth'
+import {
+    getSessionBy,
+    revokeSessionToken,
+    updateSessionToken,
+} from '@/lib/models/session'
+import { RefreshTokenData } from '@/lib/types'
 
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse,
 ) {
-    await cors(req, res)
-
-    if (!process.env.JWT_REFRESH || !process.env.JWT_TOKEN) {
-        res.status(500).send({ error: 'JWT_REFRESH or JWT_TOKEN not set' })
-        return
-    }
-    // Often you will see a GET request on refresh tokens, but this
-    // is not an idempotent function so we are using POST.
-    if (req.method !== 'POST') {
-        res.status(405).json({ error: 'Method not allowed' })
-        return
-    }
+    await cors(req, res, { methods: ['POST'] })
+    await method(req, res, { methods: ['POST'] })
 
     // Grab refresh token from cookie
     const { refreshToken } = req.cookies
@@ -34,72 +30,49 @@ export default async function handler(
     }
 
     // Verify refresh token and return error if not
-    const { userId, sessionId } = jwt.verify(
-        refreshToken,
-        process.env.JWT_REFRESH.toString(),
-    ) as { userId: number; sessionId: number }
-    if (!userId || !sessionId) {
+    const data = await verifyRefreshToken(refreshToken).catch(() => {
         res.status(401).send({ error: 'Invalid refresh token' })
-        return
-    }
+    })
+    if (!data) return
+    const { userId, sessionId, role, status } = data as RefreshTokenData
 
-    // Check refresh token is set on one of their sessions
-    let session
-    try {
-        session = await prisma.session.findUniqueOrThrow({
-            where: { id: sessionId },
-        })
-        if (!session.token) {
-            throw new Error('Session inactive')
-        }
-    } catch (e) {
-        // If not, it means it was revoked and we should deny access
-        res.status(401).send({ error: 'Session not found' })
-        return
-    }
+    // Check session is active
+    const session = await getSessionBy({ id: sessionId }).catch((err) => {
+        res.status(401).send({ error: 'Session is inactive' })
+    })
+    if (!session) return
 
     // Check that the refresh token wasn't revoked or tampered with
-    if (session.token !== refreshToken) {
+    if (session?.token !== refreshToken) {
         // Remove the session - requiring them to login again
-        await prisma.session.update({
-            where: { id: sessionId },
-            data: { updatedAt: new Date(), token: null },
-        })
+        await revokeSessionToken(sessionId)
         res.status(401).send({ error: 'Session was revoked' })
         return
     }
 
     // Create a new refresh token
-    const refreshTokenNew = jwt.sign(
-        { userId, sessionId },
-        process.env.JWT_REFRESH?.toString(),
-        { expiresIn: '180d' },
-    )
-
-    // Update token and last activity timestamp
-    await prisma.session.update({
-        where: { id: sessionId },
-        data: { updatedAt: new Date(), token: refreshTokenNew },
+    const refreshTokenNew = await signRefreshToken('180d', {
+        userId,
+        sessionId,
+        role,
+        status,
     })
 
-    // Set the cookie
+    // Add the new token back into the session item
+    await updateSessionToken(session.id, refreshTokenNew)
+
+    // Set the cookie 180 days
     res.setHeader(
         'Set-Cookie',
-        cookie.serialize('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 15_552_000, // 180 days
-            path: '/',
-        }),
+        await createTokenCookie(refreshTokenNew, 15_552_000),
     )
 
-    // Create a new access token and send it back
-    const accessToken = jwt.sign(
-        { userId, sessionId },
-        process.env.JWT_TOKEN.toString(),
-        { expiresIn: '10m' },
-    )
+    // Create the access token
+    const accessToken = await signAccessToken('10m', {
+        userId,
+        status,
+        role,
+    })
 
     // Send the access token and refresh token back
     res.status(200).send({

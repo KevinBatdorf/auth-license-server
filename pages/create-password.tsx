@@ -7,6 +7,9 @@ import {
 import jwt from 'jsonwebtoken'
 import { useState } from 'react'
 import classNames from 'classnames'
+import { emailSecret } from '@/lib/constants'
+import { verifyEmailToken } from '@/lib/auth'
+import { EmailTokenData } from '@/lib/types'
 
 export default function CreatePassword({ token }: { token: string }) {
     const [disabled, setDisabled] = useState(false)
@@ -198,13 +201,12 @@ export default function CreatePassword({ token }: { token: string }) {
 type QueryToken = { query: { token: string } }
 export const getServerSideProps = async ({ query }: QueryToken) => {
     try {
-        const secret = process?.env?.JWT_EMAIL?.toString()
-        if (!secret || !query?.token) {
+        if (!emailSecret || !query?.token) {
             throw new Error('Missing information to validate token')
         }
 
-        const { userId } = jwt.verify(query.token, secret) as { userId: number }
-        if (!userId) {
+        const data = (await verifyEmailToken(query.token)) as EmailTokenData
+        if (!data?.userId) {
             throw new Error('Token is invalid')
         }
     } catch (error) {
@@ -216,9 +218,5 @@ export const getServerSideProps = async ({ query }: QueryToken) => {
         }
     }
 
-    return {
-        props: {
-            token: query.token,
-        },
-    }
+    return { props: { token: query.token } }
 }

@@ -1,7 +1,7 @@
-import { prisma } from '../../../lib/prisma'
 import { NextApiRequest, NextApiResponse } from 'next'
-import jwt from 'jsonwebtoken'
-import { sendPasswordResetEmail } from '../../../lib/email'
+import { sendPasswordResetEmail } from '@/lib/email'
+import { getUserBy } from '@/lib/models/user'
+import { signEmailToken } from '@/lib/auth'
 
 export default async function handler(
     req: NextApiRequest,
@@ -11,23 +11,16 @@ export default async function handler(
     const start = Date.now()
 
     // Check email exists
-    let user
-    try {
-        user = await prisma.user.findUnique({
-            where: { email: req.body.email },
-        })
-    } catch (error) {
-        // Do nothing because we will wait on the timer
-    }
+    const user = await getUserBy({ email: req.body.email }).catch(() => {
+        // Do nothing on catch to let the timer run
+    })
 
-    // generate email token
-    if (user && process.env?.JWT_EMAIL) {
+    if (user?.email && user?.id) {
+        // generate email token and send email
         const { id: userId, email } = user
-        const token = jwt.sign({ userId, email }, process.env.JWT_EMAIL, {
-            expiresIn: '30m',
-        })
-        // TODO: send email with token
-        console.log(await sendPasswordResetEmail(email, token))
+        const token = await signEmailToken('30m', { userId, email })
+
+        await sendPasswordResetEmail(email, token)
     }
 
     // Make sure 3 seconds have passed

@@ -1,54 +1,38 @@
-import { prisma } from '../../../lib/prisma'
 import { NextApiRequest, NextApiResponse } from 'next'
-import bcrypt from 'bcrypt'
-import jwt from 'jsonwebtoken'
-import cookie from 'cookie'
-import Cors from 'cors'
-import initMiddleware from '../../../lib/init-middleware'
-
-const cors = initMiddleware(Cors({ methods: ['POST'] }))
+import { cors, method } from '@/lib/access'
+import { getUserBy } from '@/lib/models/user'
+import {
+    comparePasswords,
+    createTokenCookie,
+    signRefreshToken,
+    signAccessToken,
+} from '@/lib/auth'
+import { createSessionForUser, updateSessionToken } from '@/lib/models/session'
 
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse,
 ) {
-    await cors(req, res)
-
-    if (!process.env.JWT_REFRESH || !process.env.JWT_TOKEN) {
-        res.status(500).send({ error: 'JWT_REFRESH or JWT_TOKEN not set' })
-        return
-    }
-    if (req.method !== 'POST') {
-        res.status(405).json({ error: 'Method not allowed' })
-        return
-    }
+    await cors(req, res, { methods: ['POST'] })
+    await method(req, res, { methods: ['POST'] })
 
     const { email, password } = req.body
     const { country, city, region } = req.query
 
-    let user
-    try {
-        user = await prisma.user.findUniqueOrThrow({
-            where: { email },
-            include: {
-                sessions: true,
-                licenses: true,
-            },
-        })
-    } catch (e) {
-        res.status(401).send({ error: 'User not found' })
-        return
-    }
+    const user = await getUserBy({ email }).catch(() => {
+        res.status(401).send({ error: 'Invalid credentials' })
+    })
+    if (!user) return
 
     // Check password is set
-    if (!user.password) {
+    if (!user?.password) {
         res.status(401).send({ error: 'Password not set' })
         return
     }
 
-    // Check password matches
-    if (!bcrypt.compareSync(password, user.password)) {
-        res.status(401).send({ error: 'Incorrect password' })
+    // Check password
+    if (!password || !(await comparePasswords(password, user.password))) {
+        res.status(401).send({ error: 'Invalid credentials' })
         return
     }
 
@@ -63,62 +47,44 @@ export default async function handler(
     const activeSessions = user.sessions.filter((s) => s.token?.length)
     // Check remaining licenses
     const unusedLicenses = totalLicenses - activeSessions?.length
-    // if none, return error
+    // If none, return error
     if (unusedLicenses === 0) {
         res.status(401).send({ error: 'No licenses available' })
         return
     }
 
     // Create session db item and add to user
-    const session = await prisma.session.create({
-        data: {
-            userAgent: req.headers['user-agent'],
-            host: req.headers['host'],
-            country: country ? country.toString() : undefined,
-            city: city ? country.toString() : undefined,
-            region: region ? country.toString() : undefined,
-            user: { connect: { id: user.id } },
-        },
+    const session = await createSessionForUser(user.id, {
+        userAgent: req.headers['user-agent'],
+        host: req.headers['host'],
+        country: country ? country.toString() : undefined,
+        city: city ? city.toString() : undefined,
+        region: region ? region.toString() : undefined,
     })
 
     // Create refresh token to place in cookie
-    const refreshToken = jwt.sign(
-        {
-            userId: user.id,
-            sessionId: session.id,
-        },
-        process.env.JWT_REFRESH?.toString(),
-        { expiresIn: '180d' },
-    )
-
-    // Add the token back into the session item
-    await prisma.session.update({
-        where: { id: session.id },
-        data: { token: refreshToken },
+    const refreshToken = await signRefreshToken('180d', {
+        userId: user.id,
+        status: user.status,
+        role: user.role,
+        sessionId: session.id,
     })
 
-    // Set the cookie
+    // Add the token back into the session item
+    await updateSessionToken(session.id, refreshToken)
+
+    // Set the cookie 180 days
     res.setHeader(
         'Set-Cookie',
-        cookie.serialize('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 15_552_000, // 180 days
-            path: '/',
-        }),
+        await createTokenCookie(refreshToken, 15_552_000),
     )
 
     // Create the access token
-    const accessToken = jwt.sign(
-        {
-            userId: user.id,
-            status: user.status,
-            role: user.role,
-        },
-        process.env.JWT_TOKEN?.toString(),
-        { expiresIn: '10m' },
-    )
+    const accessToken = await signAccessToken('10m', {
+        userId: user.id,
+        status: user.status,
+        role: user.role,
+    })
 
     // Send the access token and refresh token back
     res.status(200).send({

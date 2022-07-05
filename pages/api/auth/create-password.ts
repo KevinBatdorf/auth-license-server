@@ -1,21 +1,18 @@
-import { prisma } from '../../../lib/prisma'
 import { NextApiRequest, NextApiResponse } from 'next'
-import jwt from 'jsonwebtoken'
-import bcrypt from 'bcrypt'
-import { validatePasswordPolicy } from '../../../lib/auth'
+import { validatePasswordPolicy, verifyEmailToken } from '@/lib/auth'
+import { method } from '@/lib/access'
+import { EmailTokenData } from '@/lib/types'
+import {
+    getUserBy,
+    revokeAllUserSessions,
+    updateUserPassword,
+} from '@/lib/models/user'
 
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse,
 ) {
-    if (!process.env.JWT_EMAIL) {
-        res.status(500).send({ error: 'JWT_EMAIL token not set' })
-        return
-    }
-    if (req.method !== 'POST') {
-        res.status(405).json({ error: 'Method not allowed' })
-        return
-    }
+    await method(req, res, { methods: ['POST'] })
 
     const { token, password, confirm } = req.body
 
@@ -25,59 +22,35 @@ export default async function handler(
     }
 
     // Validate password policy
-    try {
-        validatePasswordPolicy(password)
-    } catch (e: any) {
+    const pass = await validatePasswordPolicy(password).catch((e) => {
         res.status(400).send({ error: e.message })
-        return
-    }
+        return false
+    })
+    if (!pass) return
 
     // Verify email token
-    let userId, email
-    try {
-        const tokenResponse = jwt.verify(token, process.env.JWT_EMAIL) as {
-            userId: number
-            email: string
-        }
-        userId = tokenResponse.userId
-        email = tokenResponse.email
-        if (!userId || !email) {
-            throw new Error('Invalid token')
-        }
-    } catch (e) {
-        res.status(401).send({ error: 'Invalid token' })
-        return
-    }
+    const data = await verifyEmailToken(token).catch(() => {
+        res.status(401).send({ error: 'Invalid email token' })
+    })
+    if (!data) return
+    const { userId, email } = data as EmailTokenData
 
-    let user
-    try {
-        user = await prisma.user.findUniqueOrThrow({
-            where: { id: userId },
-        })
-        if (user.email !== email) {
-            throw new Error('Email mismatch')
-        }
-    } catch (e) {
-        // If the email doesn't match then the token should be considered invalid
-        res.status(401).send({ error: 'Invalid token' })
+    const user = await getUserBy({ id: userId }).catch(() => {
+        res.status(401).send({ error: 'User not found' })
+        return
+    })
+    if (!user) return
+
+    if (user?.email !== email) {
+        res.status(401).send({ error: 'Email mismatch' })
         return
     }
 
     // Update password - script will throw if the user doesnt exist
-    const salt = bcrypt.genSaltSync()
-    await prisma.user.update({
-        where: { id: userId },
-        data: {
-            updatedAt: new Date(),
-            password: bcrypt.hashSync(password, salt),
-        },
-    })
+    await updateUserPassword(userId, password)
 
     // Remove all sessions for this user
-    await prisma.session.updateMany({
-        where: { userId },
-        data: { updatedAt: new Date(), token: null },
-    })
+    await revokeAllUserSessions(userId)
 
     // TODO: Send email
 

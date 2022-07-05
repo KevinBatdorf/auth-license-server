@@ -1,25 +1,19 @@
-import { prisma } from '../../../lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { NextApiRequest, NextApiResponse } from 'next'
 import jwt from 'jsonwebtoken'
-import Cors from 'cors'
-import initMiddleware from '../../../lib/init-middleware'
-
-const cors = initMiddleware(Cors({ methods: ['POST'] }))
+import { webhookSecret } from '@/lib/constants'
+import { cors, method } from '@/lib/access'
+import { verifyWebhookToken } from '@/lib/auth'
+import { WebhookTokenData } from '@/lib/types'
+import { getWebhookBy } from '@/lib/models/webhook'
 
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse,
 ) {
-    await cors(req, res)
+    await cors(req, res, { methods: ['POST'] })
+    await method(req, res, { methods: ['POST'] })
 
-    if (req.method !== 'POST') {
-        res.status(405).json({ error: 'Method not allowed' })
-        return
-    }
-    if (!process.env.JWT_WEBHOOK) {
-        res.status(401).json({ error: 'Unauthorized' })
-        return
-    }
     if (!req.query?.token) {
         res.status(401).json({ error: 'Unauthorized' })
         return
@@ -31,27 +25,18 @@ export default async function handler(
     }
 
     // Grab access token from query string
-    let userId
     const token = req.query.token?.toString()
-    try {
-        const tokenResponse = jwt.verify(token, process.env.JWT_WEBHOOK) as {
-            userId: number
-        }
-        userId = tokenResponse.userId
-    } catch (e) {
-        res.status(401).send({ error: 'Invalid token' })
-        return
-    }
+    // Verify webhook token and return error if not
+    const data = await verifyWebhookToken(token).catch(() => {
+        res.status(401).send({ error: 'Invalid webhook token' })
+    })
+    if (!data) return
+    const { userId } = data as WebhookTokenData
 
-    try {
-        // Check token is active on a webhook (i.e it exists)
-        await prisma.webhook.findUniqueOrThrow({
-            where: { token: token },
-        })
-    } catch (e) {
+    const webhook = await getWebhookBy({ token: token }).catch(() => {
         res.status(401).send({ error: 'Invalid token' })
-        return
-    }
+    })
+    if (!webhook) return
 
     // convert kebab-case to camelCase
     const actionCamelCase = action.replace(/-([a-z])/g, (_: never, g: string) =>
@@ -90,6 +75,7 @@ export default async function handler(
     //
     //
     // backup-database
+    // TODO logging
 }
 type Payload = {
     email?: string
