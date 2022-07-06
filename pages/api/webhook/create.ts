@@ -12,9 +12,9 @@ export default async function handler(
     await cors(req, res, { methods: ['POST'] })
     await method(req, res, { methods: ['POST'] })
 
-    const accesstoken = req.headers?.['x-access-token']
+    const accesstoken = req.headers.authorization
 
-    if (!accesstoken) {
+    if (!accesstoken?.startsWith('Bearer ')) {
         res.status(401).json({ error: 'Unauthorized' })
         return
     }
@@ -30,7 +30,7 @@ export default async function handler(
     }
 
     // Check access token from header
-    const data = await verifyAccessToken(String(accesstoken)).catch(() => {
+    const data = await verifyAccessToken(accesstoken.substring(7)).catch(() => {
         res.status(401).send({ error: 'Invalid token token' })
     })
     if (!data) return

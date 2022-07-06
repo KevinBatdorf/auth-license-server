@@ -8,6 +8,7 @@ import {
     signAccessToken,
 } from '@/lib/auth'
 import { createSessionForUser, updateSessionToken } from '@/lib/models/session'
+import { getUnusedLicenses } from '@/lib/util'
 
 export default async function handler(
     req: NextApiRequest,
@@ -37,16 +38,8 @@ export default async function handler(
     }
 
     // Check how many unused licenses are available
-    const totalLicenses = user.licenses
-        .filter((l) => {
-            return new Date(l.validUntil) > new Date()
-        })
-        .reduce((total, next) => total + next.seats, 0)
+    const unusedLicenses = getUnusedLicenses(user)
 
-    // Get active sessions
-    const activeSessions = user.sessions.filter((s) => s.token?.length)
-    // Check remaining licenses
-    const unusedLicenses = totalLicenses - activeSessions?.length
     // If none, return error
     if (unusedLicenses === 0) {
         res.status(401).send({ error: 'No licenses available' })

@@ -27,7 +27,7 @@ export default function Reset({ token }: { token: string }) {
         })
         setMessage({
             type: 'success',
-            message: 'Success!',
+            message: 'Success! Email sent',
         })
         setStatus('done')
     }

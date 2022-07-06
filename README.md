@@ -1,6 +1,7 @@
 Notes/TODO:
 - see individual files for TODO progress
-- Set up a different mechanism for loggin in to an admin page
-- When adding tests, refactor some of the duplicate code
+- Add test
 - Move jwt check (and more) to middleware
 - Rate limit auth routes
+- Add logging mechanism
+- Create a way for a resource server to bypass license availability

@@ -7,6 +7,7 @@ import {
     revokeAllUserSessions,
     updateUserPassword,
 } from '@/lib/models/user'
+import { sendPasswordUpdatedEmail } from '@/lib/email'
 
 export default async function handler(
     req: NextApiRequest,
@@ -47,12 +48,13 @@ export default async function handler(
     }
 
     // Update password - script will throw if the user doesnt exist
-    await updateUserPassword(userId, password)
+    await updateUserPassword({ id: userId }, password)
 
     // Remove all sessions for this user
-    await revokeAllUserSessions(userId)
+    await revokeAllUserSessions({ userId })
 
-    // TODO: Send email
+    // Send confirmation the password was updated
+    await sendPasswordUpdatedEmail(email)
 
     // return success
     res.status(200).send({ success: true })

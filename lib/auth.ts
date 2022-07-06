@@ -23,6 +23,9 @@ export const comparePasswords = async (incoming: string, stored: string) =>
         })
     })
 
+export const randomPassword = () =>
+    Math.random().toString(32).slice(-8) + Math.random().toString(32).slice(-8)
+
 export const hashPassword = async (password: string): Promise<string> =>
     new Promise((resolve) => {
         const salt = bcrypt.genSaltSync()
