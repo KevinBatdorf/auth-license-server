@@ -37,3 +37,5 @@ yarn-error.log*
 .env
 
 prisma/auth.db
+
+.swc

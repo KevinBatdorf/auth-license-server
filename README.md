@@ -1,5 +1,4 @@
 Notes/TODO:
-- see individual files for TODO progress
 - Add test
 - Move jwt check (and more) to middleware
 - Rate limit auth routes
