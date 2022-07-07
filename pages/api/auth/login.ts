@@ -18,7 +18,7 @@ export default async function handler(
     await method(req, res, { methods: ['POST'] })
 
     const { email, password } = req.body
-    const { country, city, region } = req.query
+    const { country, city, region, limited = false } = req.query
 
     const user = await getUserBy({ email }).catch(() => {
         res.status(401).send({ error: 'Invalid credentials' })
@@ -38,13 +38,9 @@ export default async function handler(
     }
 
     // Check how many unused licenses are available
+    // If no licenses are available, we will stil create a session
+    // And in the token mark the access as limited
     const unusedLicenses = getUnusedLicenses(user)
-
-    // If none, return error
-    if (unusedLicenses === 0) {
-        res.status(401).send({ error: 'No licenses available' })
-        return
-    }
 
     // Create session db item and add to user
     const session = await createSessionForUser(user.id, {
@@ -53,6 +49,7 @@ export default async function handler(
         country: country ? country.toString() : undefined,
         city: city ? city.toString() : undefined,
         region: region ? region.toString() : undefined,
+        limited: Boolean(limited) || unusedLicenses === 0,
     })
 
     // Create refresh token to place in cookie
@@ -61,6 +58,7 @@ export default async function handler(
         status: user.status,
         role: user.role,
         sessionId: session.id,
+        limited: Boolean(limited) || unusedLicenses === 0,
     })
 
     // Add the token back into the session item
@@ -77,11 +75,12 @@ export default async function handler(
         userId: user.id,
         status: user.status,
         role: user.role,
+        limited: Boolean(limited) || unusedLicenses === 0,
     })
 
     // Send the access token and refresh token back
     res.status(200).send({
-        remainingLicenses: unusedLicenses - 1,
+        remainingLicenses: Math.max(unusedLicenses - 1, 0),
         accessToken,
         refreshToken,
     })

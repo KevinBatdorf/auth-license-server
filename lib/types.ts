@@ -4,6 +4,7 @@ export type AccessTokenData = {
     userId: number
     role: string
     status: string
+    limited: boolean
 }
 export type RefreshTokenData = {
     sessionId: number
@@ -24,6 +25,7 @@ export type SessionData = {
     country: string | undefined
     city: string | undefined
     region: string | undefined
+    limited: boolean
 }
 
 export type WebhookData = {

@@ -7,8 +7,12 @@ export const getUnusedLicenses = (user: UserWithData) => {
         })
         .reduce((total, next) => total + next.seats, 0)
 
-    // Get active sessions
-    const activeSessions = user.sessions.filter((s) => s.token?.length)
+    // Get active sessions - don't count limited sessions
+    // Limited sessions could be an admin page, or if they
+    // are in a trial mode (possibly?)
+    const activeSessions = user.sessions.filter(
+        (s) => s.token?.length && !s.limited,
+    )
     // Check remaining licenses
     return totalLicenses - activeSessions?.length
 }

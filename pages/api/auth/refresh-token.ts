@@ -34,7 +34,8 @@ export default async function handler(
         res.status(401).send({ error: 'Invalid refresh token' })
     })
     if (!data) return
-    const { userId, sessionId, role, status } = data as RefreshTokenData
+    const { userId, sessionId, role, status, limited } =
+        data as RefreshTokenData
 
     // Check session is active
     const session = await getSessionBy({ id: sessionId }).catch((err) => {
@@ -56,6 +57,7 @@ export default async function handler(
         sessionId,
         role,
         status,
+        limited,
     })
 
     // Add the new token back into the session item
@@ -72,6 +74,7 @@ export default async function handler(
         userId,
         status,
         role,
+        limited,
     })
 
     // Send the access token and refresh token back

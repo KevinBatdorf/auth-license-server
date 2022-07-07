@@ -58,6 +58,8 @@ model Session {
     country   String?
     city      String?
     region    String?
+    // A limited session would give them access to limited resources
+    limited   Boolean  @default(false)
     user      User     @relation(fields: [userId], references: [id])
     userId    Int
 }
