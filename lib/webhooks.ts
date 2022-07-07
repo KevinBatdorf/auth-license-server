@@ -1,22 +1,8 @@
 import { User } from '@prisma/client'
-
-// try/catch over the incoming action function in a way where if
-// it doesn't exist it will return a 404
-// create-user
-// Send the user an email with a 30m token
-//
-// update-user
-// allow a password to be updated and status to be updated
-// delete-user
-// a way to completely delete a user (alternative to setting status to INACTIVE)
-//
-//
-
 import { createUser } from './models/user'
 import { Payload } from './types'
 import { kebabToCamel } from './util'
 
-// backup-database
 export const Webhooks = (payload: Payload): Promise<Function> => {
     const hooks = {
         createUser: (): Promise<User> => createUser(payload),
