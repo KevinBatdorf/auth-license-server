@@ -35,10 +35,25 @@ export default async function handler(
     })
     if (!hook) return
 
+    // Log that the webhook is being invoked by user
+    const start = performance.now()
+    console.log(
+        `${hook} webhook: ${webhook.id} invoked by user ${webhook.userId}`,
+    )
     const response = await hook().catch((e: any) => {
         res.status(500).json({ error: e.message })
+        console.log(
+            `${hook} webhook: ${webhook.id} failed with error: ${
+                e.message
+            } after ${performance.now() - start}ms`,
+        )
     })
     if (!response) return
 
-    res.status(200).send({ success: true, response })
+    const finished = performance.now()
+    console.log(
+        `${hook} webhook: ${webhook.id} completed after ${finished - start}ms`,
+    )
+
+    res.status(200).send({ success: true, response, time: finished - start })
 }
