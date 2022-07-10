@@ -112,7 +112,10 @@ export const updateUser = async (
     }
     // If password was provided, update it separately
     if (data.password) {
-        await updateUserPassword({ id: userId }, data.password.toString());
+        await updateUserPassword(
+            { id: Number(userId) },
+            data.password.toString(),
+        );
         delete data.password;
     }
     const email = data?.email

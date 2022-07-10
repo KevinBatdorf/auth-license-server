@@ -27,7 +27,7 @@ export type WebhookData = {
 export type UserWithData = User & {
     licenses: License[];
     sessions: Session[];
-    webhooks: Webhook[];
+    webhooks?: Webhook[];
 };
 
 export type Payload = {

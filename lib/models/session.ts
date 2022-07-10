@@ -8,11 +8,16 @@ export const createSessionForUser = (
     data: Omit<Prisma.SessionCreateInput, 'user'>,
 ) =>
     prisma.session.create({
-        data: Object.assign(data, { user: { connect: { id: userId } } }),
+        data: Object.assign(data, {
+            user: { connect: { id: Number(userId) } },
+        }),
     });
 
 export const updateSessionToken = (sessionId: number, token: string) =>
-    prisma.session.update({ where: { id: sessionId }, data: { token } });
+    prisma.session.update({
+        where: { id: Number(sessionId) },
+        data: { token },
+    });
 
 export const revokeSessionToken = async (sessionId: number) => {
     const session = await prisma.session.update({
