@@ -1,4 +1,4 @@
-import { License, Session, User, Webhook } from '@prisma/client'
+import { License, Prisma, Session, User, Webhook } from '@prisma/client'
 
 export type AccessTokenData = {
     userId: number
@@ -32,15 +32,16 @@ export type UserWithData = User & {
 
 export type Payload = {
     action: string
+    userId?: number
     email?: string
-    id?: number
-    validUntil?: Date
+    password?: string
+    validUntil?: string
     productId?: string
     seats?: number
     sessionId?: number
     licenseId?: number
     webhookId?: number
     name?: string
-    role?: 'ADMIN'
-    status?: string
+    role?: 'ADMIN' | 'OWNER' | 'MANAGER'
+    status?: 'ACTIVE' | 'INACTIVE'
 }

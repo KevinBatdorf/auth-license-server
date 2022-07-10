@@ -12,6 +12,7 @@ const run = async () => {
             email: 'user@example.com',
             password: bcrypt.hashSync('password', salt),
             name: 'Kevin B',
+            role: 'ADMIN',
             licenses: {
                 create: [
                     {

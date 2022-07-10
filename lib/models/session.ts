@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { sendSessionRevokedEmail } from '../email'
+import { getUserBy } from './user'
 
 export const createSessionForUser = (
     userId: number,
@@ -13,19 +14,14 @@ export const createSessionForUser = (
 export const updateSessionToken = (sessionId: number, token: string) =>
     prisma.session.update({ where: { id: sessionId }, data: { token } })
 
-export const deleteSession = async (sessionId: number) => {
-    await prisma.session.delete({ where: { id: sessionId } })
-    return true
-}
-
 export const revokeSessionToken = async (sessionId: number) => {
     const session = await prisma.session.update({
-        where: { id: sessionId },
+        where: { id: Number(sessionId) },
         data: { updatedAt: new Date(), token: null },
         include: { user: true },
     })
     await sendSessionRevokedEmail(session.user.email)
-    return true
+    return getUserBy({ id: Number(session.userId) })
 }
 
 export const getSessionBy = async (data: Prisma.SessionWhereUniqueInput) => {

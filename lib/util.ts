@@ -28,3 +28,17 @@ export const excludeFields = <Model, Key extends keyof Model>(
     for (let key of keys) delete model[key]
     return model
 }
+
+export const validateDate = (
+    date: undefined | string | number,
+): Promise<Date> => {
+    return new Promise((resolve, reject) => {
+        if (!date) return reject(new Error('Date is required'))
+        const d = new Date(date)
+        if (d.toString() === 'Invalid Date') {
+            reject(new Error('Invalid date'))
+        } else {
+            resolve(d)
+        }
+    })
+}

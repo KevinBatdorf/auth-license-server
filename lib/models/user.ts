@@ -1,7 +1,13 @@
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
-import { hashPassword, randomPassword, signEmailToken } from '../auth'
 import {
+    hashPassword,
+    randomPassword,
+    signEmailToken,
+    validateEmailAddress,
+} from '../auth'
+import {
+    sendCreatePasswordEmail,
     sendDataChangedEmail,
     sendDeleteEmail,
     sendPasswordResetEmail,
@@ -13,9 +19,9 @@ export const getUserBy = async (data: Prisma.UserWhereUniqueInput) => {
     const user = await prisma.user.findUniqueOrThrow({
         where: data,
         include: {
-            sessions: true,
+            sessions: { where: { NOT: [{ token: null }] } },
             licenses: true,
-            webhooks: true,
+            webhooks: { where: { NOT: [{ token: null }] } },
         },
     })
     return excludeFields(user, 'password')
@@ -59,11 +65,14 @@ export const updateUserPassword = async (
 }
 
 export const revokeAllUserSessions = async (data: Prisma.SessionWhereInput) => {
+    if (!data.userId) {
+        throw new Error('UserId is missing')
+    }
     await prisma.session.updateMany({
-        where: data,
+        where: { userId: Number(data.userId) },
         data: { updatedAt: new Date(), token: null },
     })
-    return true
+    return getUserBy({ id: Number(data.userId) })
 }
 
 export const createUser = async ({
@@ -73,23 +82,25 @@ export const createUser = async ({
 }: {
     name?: string
     email?: string
-    role?: 'ADMIN'
+    role?: string
 }) => {
     if (!email || !name) {
         throw new Error('Data is missing')
     }
     const password = randomPassword()
-    const user = await prisma.user.create({
-        data: {
-            email: email,
-            name: name,
+    const validated = async () =>
+        Prisma.validator<Prisma.UserCreateInput>()({
+            email: await validateEmailAddress(email),
+            name,
             password: await hashPassword(password),
             role: role === 'ADMIN' ? 'ADMIN' : undefined,
-        },
+        })
+    const user = await prisma.user.create({
+        data: await validated(),
     })
     const { id: userId } = user
     const token = await signEmailToken('30m', { userId, email })
-    await sendPasswordResetEmail(user.email, token)
+    await sendCreatePasswordEmail(user.email, token)
     return excludeFields(user, 'password')
 }
 
@@ -105,9 +116,20 @@ export const updateUser = async (
         await updateUserPassword({ id: userId }, data.password.toString())
         delete data.password
     }
+    const email = data?.email
+        ? await validateEmailAddress(data.email.toString())
+        : undefined
+    const userUpdateData = () =>
+        Prisma.validator<Prisma.UserUpdateInput>()({
+            email,
+            name: data.name,
+            role: data.role,
+            status: data.status,
+        })
+
     const user = await prisma.user.update({
-        where: { id: userId },
-        data,
+        where: { id: Number(userId) },
+        data: userUpdateData(),
     })
     const userNoPassword = excludeFields(user, 'password')
     await sendDataChangedEmail(user.email, userNoPassword)
@@ -116,13 +138,13 @@ export const updateUser = async (
 
 export const deleteUser = async (userId: number) => {
     if (!userId) throw new Error('Missing user id')
-    const user = await prisma.user.findUnique({ where: { id: userId } })
+    const user = await prisma.user.findUnique({ where: { id: Number(userId) } })
     if (!user) throw new Error('User not found')
     try {
         await prisma.$transaction([
-            prisma.license.deleteMany({ where: { userId } }),
-            prisma.session.deleteMany({ where: { userId } }),
-            prisma.user.delete({ where: { id: userId } }),
+            prisma.license.deleteMany({ where: { userId: Number(userId) } }),
+            prisma.session.deleteMany({ where: { userId: Number(userId) } }),
+            prisma.user.delete({ where: { id: Number(userId) } }),
         ])
     } catch (e) {
         throw new Error('Failed to delete user')

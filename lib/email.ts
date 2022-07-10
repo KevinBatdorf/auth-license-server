@@ -16,6 +16,15 @@ const transporter = nodemailer.createTransport({
     },
 })
 
+export const sendCreatePasswordEmail = async (email: string, token: string) => {
+    return await transporter.sendMail({
+        from: '"Fred Foo 👻" <foo@example.com>', // sender address
+        to: email,
+        subject: 'Please set password',
+        html: `<a href="${homeUrl}/create-password?token=${token}">Set password</a>`,
+    })
+}
+
 export const sendPasswordResetEmail = async (email: string, token: string) => {
     return await transporter.sendMail({
         from: '"Fred Foo 👻" <foo@example.com>', // sender address

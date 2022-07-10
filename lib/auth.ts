@@ -15,6 +15,17 @@ import {
     WebhookTokenData,
 } from './types'
 
+export const validateEmailAddress = async (email: string): Promise<string> =>
+    new Promise((resolve, reject) => {
+        //validate this is an email address
+        const re =
+            /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+        if (re.test(String(email).toLowerCase())) {
+            resolve(email)
+        }
+        reject(new Error('Invalid email address'))
+    })
+
 export const comparePasswords = async (incoming: string, stored: string) =>
     new Promise((resolve, reject) => {
         bcrypt.compare(incoming, stored, (err, result) => {
