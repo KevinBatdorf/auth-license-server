@@ -47,14 +47,11 @@ export default async function handler(
         return
     }
 
-    // Update password - script will throw if the user doesnt exist
-    await updateUserPassword({ id: userId }, password)
-
     // Remove all sessions for this user
     await revokeAllUserSessions({ userId })
 
-    // Send confirmation the password was updated
-    await sendPasswordUpdatedEmail(email)
+    // Update password - script will throw if the user doesnt exist
+    await updateUserPassword({ id: userId }, password)
 
     // return success
     res.status(200).send({ success: true })

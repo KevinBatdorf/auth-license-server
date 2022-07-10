@@ -19,3 +19,12 @@ export const getUnusedLicenses = (user: UserWithData) => {
 
 export const kebabToCamel = (str: string) =>
     str.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+
+/** Exclude fields on Prisma */
+export const excludeFields = <Model, Key extends keyof Model>(
+    model: Model,
+    ...keys: Key[]
+): Omit<Model, Key> => {
+    for (let key of keys) delete model[key]
+    return model
+}

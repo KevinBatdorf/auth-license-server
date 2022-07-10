@@ -19,15 +19,6 @@ export type WebhookTokenData = {
     userId: number
 }
 
-export type SessionData = {
-    userAgent: string | undefined
-    host: string | undefined
-    country: string | undefined
-    city: string | undefined
-    region: string | undefined
-    limited: boolean
-}
-
 export type WebhookData = {
     name: string
     token?: string
@@ -43,6 +34,12 @@ export type Payload = {
     action: string
     email?: string
     id?: number
+    validUntil?: Date
+    productId?: string
+    seats?: number
+    sessionId?: number
+    licenseId?: number
+    webhookId?: number
     name?: string
     role?: 'ADMIN'
     status?: string

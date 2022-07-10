@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { cors, method } from '@/lib/access'
-import { getUserBy } from '@/lib/models/user'
+import { getUserWithPasswordBy } from '@/lib/models/user'
 import {
     comparePasswords,
     createTokenCookie,
@@ -20,7 +20,7 @@ export default async function handler(
     const { email, password } = req.body
     const { country, city, region, limited = false } = req.query
 
-    const user = await getUserBy({ email }).catch(() => {
+    const user = await getUserWithPasswordBy({ email }).catch(() => {
         res.status(401).send({ error: 'Invalid credentials' })
     })
     if (!user) return

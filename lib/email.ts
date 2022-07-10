@@ -1,3 +1,9 @@
+/**
+ * Since emails are pretty domain specific this is
+ * left pretty bare bones.
+ */
+
+import { User } from '@prisma/client'
 import nodemailer from 'nodemailer'
 import { homeUrl } from './constants'
 
@@ -25,5 +31,35 @@ export const sendPasswordUpdatedEmail = async (email: string) => {
         to: email,
         subject: 'Password updated',
         text: 'Your password was updated.',
+    })
+}
+
+export const sendSessionRevokedEmail = async (email: string) => {
+    return await transporter.sendMail({
+        from: '"Fred Foo 👻" <foo@example.com>', // sender address
+        to: email,
+        subject: 'Session revoked',
+        text: 'Your access token was used unexpectedly.',
+    })
+}
+
+export const sendDataChangedEmail = async (
+    email: string,
+    user: Omit<User, 'password'>,
+) => {
+    return await transporter.sendMail({
+        from: '"Fred Foo 👻" <foo@example.com>', // sender address
+        to: email,
+        subject: 'Profile updated',
+        text: JSON.stringify(user),
+    })
+}
+
+export const sendDeleteEmail = async (email: string) => {
+    return await transporter.sendMail({
+        from: '"Fred Foo 👻" <foo@example.com>', // sender address
+        to: email,
+        subject: 'Account deleted',
+        text: 'The account was deleted',
     })
 }

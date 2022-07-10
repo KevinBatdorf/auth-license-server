@@ -7,6 +7,11 @@ export const createWebhookForUser = (userId: number, data: WebhookData) =>
         data: Object.assign(data, { user: { connect: { id: userId } } }),
     })
 
+export const deleteWebhook = async (webhookId: number) => {
+    await prisma.webhook.delete({ where: { id: webhookId } })
+    return true
+}
+
 export const getWebhookBy = async (data: Prisma.WebhookWhereUniqueInput) => {
     const session = await prisma.webhook.findUniqueOrThrow({ where: data })
     if (!session?.token) {
