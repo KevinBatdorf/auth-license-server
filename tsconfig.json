@@ -19,7 +19,12 @@
             "@/lib/*": ["lib/*"]
         }
     },
-    "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+    "include": [
+        "next-env.d.ts",
+        "**/*.ts",
+        "**/*.tsx",
+        "scripts/create-user.ts"
+    ],
     "exclude": ["node_modules"],
     "ts-node": {
         "compilerOptions": {

@@ -1,10 +1,10 @@
-import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcrypt'
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 const run = async () => {
-    const salt = bcrypt.genSaltSync()
+    const salt = bcrypt.genSaltSync();
     await prisma.user.upsert({
         where: { email: 'user@example.com' },
         update: {},
@@ -27,13 +27,13 @@ const run = async () => {
                 ],
             },
         },
-    })
-}
+    });
+};
 
 run()
     .catch((e) => {
-        throw e
+        throw e;
     })
     .finally(async () => {
-        await prisma.$disconnect()
-    })
+        await prisma.$disconnect();
+    });

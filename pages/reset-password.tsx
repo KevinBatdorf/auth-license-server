@@ -3,34 +3,34 @@ import {
     CheckCircleIcon,
     XIcon,
     InformationCircleIcon,
-} from '@heroicons/react/solid'
-import { useState } from 'react'
+} from '@heroicons/react/solid';
+import { useState } from 'react';
 
 export default function Reset({ token }: { token: string }) {
-    const [disabled, setDisabled] = useState(false)
-    const [status, setStatus] = useState<'' | 'processing' | 'done'>('')
+    const [disabled, setDisabled] = useState(false);
+    const [status, setStatus] = useState<'' | 'processing' | 'done'>('');
     const [message, setMessage] = useState<{
-        type: 'success'
-        message: string
-    } | null>(null)
+        type: 'success';
+        message: string;
+    } | null>(null);
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        if (disabled) return
-        setMessage(null)
-        setDisabled(true)
-        setStatus('processing')
-        const email = e.currentTarget.email.value
+        e.preventDefault();
+        if (disabled) return;
+        setMessage(null);
+        setDisabled(true);
+        setStatus('processing');
+        const email = e.currentTarget.email.value;
         await fetch('/api/auth/reset-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email }),
-        })
+        });
         setMessage({
             type: 'success',
             message: 'Success! Email sent',
-        })
-        setStatus('done')
-    }
+        });
+        setStatus('done');
+    };
 
     return (
         <div className="min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 md:mt-32">
@@ -128,5 +128,5 @@ export default function Reset({ token }: { token: string }) {
                 ) : null}
             </div>
         </div>
-    )
+    );
 }

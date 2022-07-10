@@ -1,19 +1,19 @@
-import { User } from '@prisma/client'
+import { User } from '@prisma/client';
 import {
     createLicenseForUser,
     deleteLicense,
     updateLicense,
-} from './models/license'
-import { revokeSessionToken } from './models/session'
+} from './models/license';
+import { revokeSessionToken } from './models/session';
 import {
     createUser,
     deleteUser,
     revokeAllUserSessions,
     updateUser,
-} from './models/user'
-import { revokeWebhook } from './models/webhook'
-import { Payload } from './types'
-import { kebabToCamel } from './util'
+} from './models/user';
+import { revokeWebhook } from './models/webhook';
+import { Payload } from './types';
+import { kebabToCamel } from './util';
 
 export const Webhooks = (payload: Payload): Promise<Function> => {
     const hooks = {
@@ -34,12 +34,12 @@ export const Webhooks = (payload: Payload): Promise<Function> => {
             revokeAllUserSessions(payload),
         revokeWebhook: async (): Promise<Omit<User, 'password'>> =>
             revokeWebhook(payload?.webhookId ?? 0),
-    }
+    };
     return new Promise((resolve, reject) => {
-        const action = kebabToCamel(payload?.action)
+        const action = kebabToCamel(payload?.action);
         if (!Object.getOwnPropertyNames(hooks).includes(action)) {
-            reject(new Error('Action not found'))
+            reject(new Error('Action not found'));
         }
-        resolve(hooks[action as keyof typeof hooks])
-    })
-}
+        resolve(hooks[action as keyof typeof hooks]);
+    });
+};

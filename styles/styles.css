@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 html {
-    @apply h-full bg-gray-50
+    @apply h-full bg-gray-50;
 }
 body {
-    @apply h-full
+    @apply h-full;
 }

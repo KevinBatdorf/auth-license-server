@@ -1,47 +1,47 @@
-import { License, Prisma, Session, User, Webhook } from '@prisma/client'
+import { License, Prisma, Session, User, Webhook } from '@prisma/client';
 
 export type AccessTokenData = {
-    userId: number
-    role: string
-    status: string
-    limited: boolean
-}
+    userId: number;
+    role: string;
+    status: string;
+    limited: boolean;
+};
 export type RefreshTokenData = {
-    sessionId: number
-} & AccessTokenData
+    sessionId: number;
+} & AccessTokenData;
 
 export type EmailTokenData = {
-    userId: number
-    email: string
-}
+    userId: number;
+    email: string;
+};
 
 export type WebhookTokenData = {
-    userId: number
-}
+    userId: number;
+};
 
 export type WebhookData = {
-    name: string
-    token?: string
-}
+    name: string;
+    token?: string;
+};
 
 export type UserWithData = User & {
-    licenses: License[]
-    sessions: Session[]
-    webhooks: Webhook[]
-}
+    licenses: License[];
+    sessions: Session[];
+    webhooks: Webhook[];
+};
 
 export type Payload = {
-    action: string
-    userId?: number
-    email?: string
-    password?: string
-    validUntil?: string
-    productId?: string
-    seats?: number
-    sessionId?: number
-    licenseId?: number
-    webhookId?: number
-    name?: string
-    role?: 'ADMIN' | 'OWNER' | 'MANAGER'
-    status?: 'ACTIVE' | 'INACTIVE'
-}
+    action: string;
+    userId?: number;
+    email?: string;
+    password?: string;
+    validUntil?: string;
+    productId?: string;
+    seats?: number;
+    sessionId?: number;
+    licenseId?: number;
+    webhookId?: number;
+    name?: string;
+    role?: 'ADMIN' | 'OWNER' | 'MANAGER';
+    status?: 'ACTIVE' | 'INACTIVE';
+};

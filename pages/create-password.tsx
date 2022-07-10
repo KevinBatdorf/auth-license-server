@@ -3,55 +3,55 @@ import {
     CheckCircleIcon,
     XIcon,
     InformationCircleIcon,
-} from '@heroicons/react/solid'
-import jwt from 'jsonwebtoken'
-import { useState } from 'react'
-import classNames from 'classnames'
-import { emailSecret } from '@/lib/constants'
-import { verifyEmailToken } from '@/lib/auth'
-import { EmailTokenData } from '@/lib/types'
+} from '@heroicons/react/solid';
+import jwt from 'jsonwebtoken';
+import { useState } from 'react';
+import classNames from 'classnames';
+import { emailSecret } from '@/lib/constants';
+import { verifyEmailToken } from '@/lib/auth';
+import { EmailTokenData } from '@/lib/types';
 
 export default function CreatePassword({ token }: { token: string }) {
-    const [disabled, setDisabled] = useState(false)
+    const [disabled, setDisabled] = useState(false);
     const [message, setMessage] = useState<{
-        type: 'error' | 'success'
-        message: string
-    } | null>(null)
+        type: 'error' | 'success';
+        message: string;
+    } | null>(null);
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        if (disabled) return
-        setMessage(null)
-        setDisabled(true)
-        const password = e.currentTarget.password.value
-        const confirm = e.currentTarget.confirm.value
+        e.preventDefault();
+        if (disabled) return;
+        setMessage(null);
+        setDisabled(true);
+        const password = e.currentTarget.password.value;
+        const confirm = e.currentTarget.confirm.value;
         if (password !== confirm) {
             setMessage({
                 type: 'error',
                 message: 'Error! Passwords do not match.',
-            })
-            setDisabled(false)
-            return
+            });
+            setDisabled(false);
+            return;
         }
         const response = await fetch('/api/auth/create-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ password, confirm, token }),
-        })
-        const data = await response.json()
+        });
+        const data = await response.json();
         if (data?.error) {
             setMessage({
                 type: 'error',
                 message: `Error! ${data.error}`,
-            })
-            setDisabled(false)
-            return
+            });
+            setDisabled(false);
+            return;
         }
         // Set notice success - password updated
         setMessage({
             type: 'success',
             message: 'Success! Password updated.',
-        })
-    }
+        });
+    };
 
     return (
         <div className="min-h-full flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 md:mt-32">
@@ -195,19 +195,19 @@ export default function CreatePassword({ token }: { token: string }) {
                 ) : null}
             </div>
         </div>
-    )
+    );
 }
 
-type QueryToken = { query: { token: string } }
+type QueryToken = { query: { token: string } };
 export const getServerSideProps = async ({ query }: QueryToken) => {
     try {
         if (!emailSecret || !query?.token) {
-            throw new Error('Missing information to validate token')
+            throw new Error('Missing information to validate token');
         }
 
-        const data = (await verifyEmailToken(query.token)) as EmailTokenData
+        const data = (await verifyEmailToken(query.token)) as EmailTokenData;
         if (!data?.userId) {
-            throw new Error('Token is invalid')
+            throw new Error('Token is invalid');
         }
     } catch (error) {
         return {
@@ -215,8 +215,8 @@ export const getServerSideProps = async ({ query }: QueryToken) => {
                 destination: '/401',
                 permanent: false,
             },
-        }
+        };
     }
 
-    return { props: { token: query.token } }
-}
+    return { props: { token: query.token } };
+};

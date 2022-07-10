@@ -20,5 +20,5 @@ export default function FourOhOne() {
                 </main>
             </div>
         </div>
-    )
+    );
 }

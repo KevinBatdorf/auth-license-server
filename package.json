@@ -6,7 +6,9 @@
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
-        "lint": "next lint"
+        "lint": "next lint",
+        "create-admin": "ts-node ./scripts/create-user.ts admin",
+        "prettier-fix": "npx prettier --write . '!.next/**/*'"
     },
     "prisma": {
         "seed": "ts-node ./prisma/seed.ts"
