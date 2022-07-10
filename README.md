@@ -36,6 +36,6 @@ Your application should request a new refresh token every 10 minutes from `/api/
 
 ## Webhooks overview
 
-Webhooks are available to admins by requesting one on [`/api/webhooks/create`](https://github.com/KevinBatdorf/auth-license-server/blob/main/lib/webhooks.ts#L20) by a user with an `ADMIN` role. This is a long-lived token that gives access to pre defined commands. See `/lib/webhooks` for the basic commands I added. Sending a POST request to `/api/webhooks` with the function name in kebab case `action: create-user` and the required payload will result in a successful execution.
+Webhooks are available to admins by requesting one on `/api/webhooks/create` by a user with an `ADMIN` role. This is a long-lived token that gives access to pre defined commands. See [`lib/webhooks`](https://github.com/KevinBatdorf/auth-license-server/blob/main/lib/webhooks.ts#L20) for the basic commands I added. Sending a POST request to `/api/webhooks` with the function name in kebab case `action: create-user` and the required payload will result in a successful execution.
 
 You can create users with a license from your main application, for example, after a sucessful item is purchased from your store. the access token can be then used on a 3rd server to provice access to resources.
