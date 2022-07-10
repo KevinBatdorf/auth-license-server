@@ -28,7 +28,7 @@ npm run create-admin email@example.com "Your Name"
 ```
 Then you want to visit `/reset-password` to receive an email with a link to the password reset page.
 
-Next you would design your application to send the email and password to `/api/auth/login` and receive a long-lived refresh token in the cookie (and response), and a 10 minute access token that you will keep in the browsers memory (if not using a browser-based app, store the refresh token securly depending on the context of your application).
+Next you would design your application to send the email and password to `/api/auth/login` and receive a long-lived refresh token in the cookie (and response), and a 10 minute access token that you will keep in the browser's memory (don't store these in local storage or session storage). If not using a browser-based app, store the refresh token securly depending on the context of your application.
 
 Logging in will check against available `licenses * seats`, and if no remaining licenses exist, the token will be set to `limited: true` so your resource server can possibly show different (trial?) data. If a license is changed or deleted, the user will be asked to log in again.
 
@@ -36,6 +36,6 @@ Your application should request a new refresh token every 10 minutes from `/api/
 
 ## Webhooks overview
 
-Webhooks are available to admins by requesting one on `/api/webhooks/create` by a user with an `ADMIN` role. This is a long-lived token that gives access to pre defined commands. See `/lib/webhooks` for the basic commands I added. Sending a POST request to `/api/webhooks` with the function name in kebab case `action: create-user` and the required payload will result in a successful execution.
+Webhooks are available to admins by requesting one on [`/api/webhooks/create`](https://github.com/KevinBatdorf/auth-license-server/blob/main/lib/webhooks.ts#L20) by a user with an `ADMIN` role. This is a long-lived token that gives access to pre defined commands. See `/lib/webhooks` for the basic commands I added. Sending a POST request to `/api/webhooks` with the function name in kebab case `action: create-user` and the required payload will result in a successful execution.
 
 You can create users with a license from your main application, for example, after a sucessful item is purchased from your store. the access token can be then used on a 3rd server to provice access to resources.
