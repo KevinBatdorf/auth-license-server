@@ -7,7 +7,6 @@ import {
     revokeAllUserSessions,
     updateUserPassword,
 } from '@/lib/models/user';
-import { sendPasswordUpdatedEmail } from '@/lib/email';
 
 export default async function handler(
     req: NextApiRequest,
